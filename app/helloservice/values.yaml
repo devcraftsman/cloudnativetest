@@ -50,7 +50,7 @@ ingress:
   hosts:
     - host: hello.example.com
       paths:
-        - path: /
+        - path: /*
           pathType: ImplementationSpecific
   tls: []
   #  - secretName: chart-example-tls
