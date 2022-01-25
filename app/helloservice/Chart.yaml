@@ -3,4 +3,4 @@ name: helloservice
 description: A Helm chart to deploy hello service
 type: application
 version: 0.1.0
-appVersion: "0.0.1"
+appVersion: "0.1.0"
