@@ -2,6 +2,7 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+TODO.txt
 
 ### STS ###
 .apt_generated
@@ -30,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Terraform ###
+*.plan
+*.tfvars
+.terraform*
+*.tfstate*
+
+**/tools/**
