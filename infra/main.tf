@@ -37,6 +37,27 @@ module "dashboard" {
   source = "./modules/dashboard"
 }
 
+module "nginx-ingress" {
+  source = "./modules/nginx-ingress"
+}
+
+module "prometheus" {
+  source = "./modules/prometheus"
+
+  depends_on = [
+    module.nginx-ingress
+  ]
+}
+
 module "istio" {
   source = "./modules/istio"
+}
+
+
+module "argocdn" {
+  source = "./modules/argo"
+
+  depends_on = [
+    module.nginx-ingress
+  ]
 }
