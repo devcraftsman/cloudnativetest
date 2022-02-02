@@ -27,7 +27,7 @@ resource "helm_release" "ingress_nginx" {
     data.local_file.values.content
   ]
 
-  depends_on = [kubernetes_namespace.ingress-nginx, kubernetes_manifest.ingressclass_nginx]
+  depends_on = [kubernetes_namespace.ingress-nginx]
 }
 
 

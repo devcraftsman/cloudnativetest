@@ -3750,7 +3750,7 @@ resource "kubernetes_manifest" "service_argocd_server" {
     }
   }
 
-  depends_on = [kubernetes_namespace.argocd]
+  depends_on = [kubernetes_namespace.argocd, kubernetes_manifest.configmap_argocd_cmd_params_cm]
 }
 
 resource "kubernetes_manifest" "service_argocd_server_metrics" {
@@ -4407,6 +4407,8 @@ resource "kubernetes_manifest" "deployment_argocd_server" {
             {
               "command" = [
                 "argocd-server",
+                "--repo-server",
+                "--insecure"
               ]
               "env" = [
                 {
@@ -5380,6 +5382,7 @@ resource "kubernetes_manifest" "ingress_argocd_argocd_server_grpc_ingress" {
     "kind" = "Ingress"
     "metadata" = {
       "annotations" = {
+        "nginx.ingress.kubernetes.io/force-ssl-redirect" =  "true"
         "nginx.ingress.kubernetes.io/backend-protocol" =  "GRPC"
       }
       "name" = "argocd-server-grpc-ingress"
