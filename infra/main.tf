@@ -15,6 +15,11 @@ terraform {
       version = "~> 2.1.0"
     }
 
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.7.2"
+    }
+
     http = {
       source  = "hashicorp/http"
       version = "~> 2.1.0"
@@ -41,23 +46,30 @@ module "nginx-ingress" {
   source = "./modules/nginx-ingress"
 }
 
+resource "time_sleep" "wait_ingress" {
+  depends_on = [module.nginx-ingress]
+
+  create_duration = var.ingress_wait_time
+}
+
+
 module "prometheus" {
   source = "./modules/prometheus"
 
   depends_on = [
-    module.nginx-ingress
+    time_sleep.wait_ingress
   ]
 }
 
 module "istio" {
   source = "./modules/istio"
-}
+} 
 
 
-module "argocdn" {
+module "argocd" {
   source = "./modules/argo"
 
   depends_on = [
-    module.nginx-ingress
+    time_sleep.wait_ingress
   ]
 }

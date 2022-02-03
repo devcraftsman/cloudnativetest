@@ -1,0 +1,250 @@
+## ArgoCD configuration
+## Ref: https://github.com/argoproj/argo-cd
+##
+
+global:
+  hostAliases:
+    - ip: 127.0.0.1
+      hostnames:
+        - argocd.example.com
+
+  networkPolicy:
+    create: true
+    defaultDenyIngress: false
+
+## Controller
+controller:
+  serviceAccount:
+    # -- Create a service account for the application controller
+    create: true
+    # -- Service account name
+    name: argocd-application-controller
+    # -- Automount API credentials for the Service Account
+    automountServiceAccountToken: true
+
+## Server
+server:
+  # -- Argo CD server name
+  name: server
+
+  # -- The number of server pods to run
+  replicas: 1
+
+  autoscaling:
+    # -- Enable Horizontal Pod Autoscaler ([HPA]) for the Argo CD server
+    enabled: false
+    # -- Minimum number of replicas for the Argo CD server [HPA]
+    minReplicas: 1
+    # -- Maximum number of replicas for the Argo CD server [HPA]
+    maxReplicas: 5
+    # -- Average CPU utilization percentage for the Argo CD server [HPA]
+    targetCPUUtilizationPercentage: 50
+    # -- Average memory utilization percentage for the Argo CD server [HPA]
+    targetMemoryUtilizationPercentage: 50
+
+  image:
+    # -- Repository to use for the Argo CD server
+    # @default -- `""` (defaults to global.image.repository)
+    repository: "" # defaults to global.image.repository
+    # -- Tag to use for the Argo CD server
+    # @default -- `""` (defaults to global.image.tag)
+    tag: "" # defaults to global.image.tag
+    # -- Image pull policy for the Argo CD server
+    # @default -- `""` (defaults to global.image.imagePullPolicy)
+    imagePullPolicy: "" # IfNotPresent
+
+  # -- Additional command line arguments to pass to Argo CD server
+  extraArgs:
+    - --insecure
+
+  # This flag is used to either remove or pass the CLI flag --staticassets /shared/app to the Argo CD server app
+  staticAssets:
+    # -- Disable deprecated flag `--staticassets`
+    enabled: true
+
+  # -- Argo CD server log format: Either `text` or `json`
+  logFormat: text
+  # -- Argo CD server log level
+  logLevel: info
+
+  # -- Configures the server port
+  containerPort: 8080
+
+  ## Readiness and liveness probes for default backend
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
+  ##
+  readinessProbe:
+    # -- Minimum consecutive failures for the [probe] to be considered failed after having succeeded
+    failureThreshold: 3
+    # -- Number of seconds after the container has started before [probe] is initiated
+    initialDelaySeconds: 10
+    # -- How often (in seconds) to perform the [probe]
+    periodSeconds: 10
+    # -- Minimum consecutive successes for the [probe] to be considered successful after having failed
+    successThreshold: 1
+    # -- Number of seconds after which the [probe] times out
+    timeoutSeconds: 1
+  livenessProbe:
+    # -- Minimum consecutive failures for the [probe] to be considered failed after having succeeded
+    failureThreshold: 3
+    # -- Number of seconds after the container has started before [probe] is initiated
+    initialDelaySeconds: 10
+    # -- How often (in seconds) to perform the [probe]
+    periodSeconds: 10
+    # -- Minimum consecutive successes for the [probe] to be considered successful after having failed
+    successThreshold: 1
+    # -- Number of seconds after which the [probe] times out
+    timeoutSeconds: 1
+
+  # -- Priority class for the Argo CD server
+  priorityClassName: ""
+
+  # -- Resource limits and requests for the Argo CD server
+  #resources: {}
+  #  limits:
+  #    cpu: 100m
+  #    memory: 128Mi
+  #  requests:
+  #    cpu: 50m
+  #    memory: 64Mi
+
+  ## Certificate configuration
+  certificate:
+    # -- Enables a certificate manager certificate
+    enabled: false
+    # -- Certificate manager domain
+    domain: argocd.example.com
+    issuer:
+      # -- Certificate manager issuer
+      kind: # ClusterIssuer
+      # -- Certificate manager name
+      name: # letsencrypt
+    # -- Certificate manager additional hosts
+    additionalHosts: []
+    # -- Certificate manager secret name
+    secretName: argocd-server-tls
+
+  ## Server service configuration
+  service:
+    # -- Server service type
+    type: ClusterIP
+    # -- Server service http port for NodePort service type (only if `server.service.type` is set to "NodePort")
+    nodePortHttp: 30080
+    # -- Server service https port for NodePort service type (only if `server.service.type` is set to "NodePort")
+    nodePortHttps: 30443
+    # -- Server service http port
+    servicePortHttp: 80
+    # -- Server service https port
+    servicePortHttps: 443
+    # -- Server service http port name, can be used to route traffic via istio
+    servicePortHttpName: http
+    # -- Server service https port name, can be used to route traffic via istio
+    servicePortHttpsName: https
+    # -- Use named target port for argocd
+    ## Named target ports are not supported by GCE health checks, so when deploying argocd on GKE
+    ## and exposing it via GCE ingress, the health checks fail and the load balancer returns a 502.
+    namedTargetPort: true
+    # -- Denotes if this Service desires to route external traffic to node-local or cluster-wide endpoints
+    externalTrafficPolicy: ""
+    # -- Used to maintain session affinity. Supports `ClientIP` and `None`
+    sessionAffinity: ""
+
+  ## Server metrics service configuration
+  metrics:
+    # -- Deploy metrics service
+    enabled: false
+    service:
+      # -- Metrics service port
+      servicePort: 8083
+    serviceMonitor:
+      # -- Enable a prometheus ServiceMonitor
+      enabled: false
+      # -- Prometheus ServiceMonitor interval
+      interval: 30s
+
+  serviceAccount:
+    # -- Create server service account
+    create: true
+    # -- Server service account name
+    name: argocd-server
+    # -- Annotations applied to created service account
+    annotations: {}
+    # -- Automount API credentials for the Service Account
+    automountServiceAccountToken: true
+
+  ingress:
+    # -- Enable an ingress resource for the Argo CD server
+    enabled: true
+    # -- Defines which ingress controller will implement the resource
+    ingressClassName: "nginx"
+
+    annotations : {
+      nginx.ingress.kubernetes.io/force-ssl-redirect:  "true",
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    }
+
+    # -- List of ingress hosts
+    ## Argo Ingress.
+    ## Hostnames must be provided if Ingress is enabled.
+    ## Secrets must be manually created in the namespace
+    hosts:
+      - argocd.example.com
+
+    # -- List of ingress paths
+    paths:
+      - /
+    # -- Ingress path type. One of `Exact`, `Prefix` or `ImplementationSpecific`
+    pathType: Prefix
+    # -- Additional ingress paths
+    # -- Ingress TLS configuration
+
+    tls:
+      - secretName: argocd-tls-certificate
+        hosts:
+          - argocd.example.com
+
+    # -- Uses `server.service.servicePortHttps` instead `server.service.servicePortHttp`
+    https: false
+
+  # dedicated ingress for gRPC as documented at
+  # Ref: https://argoproj.github.io/argo-cd/operator-manual/ingress/
+  ingressGrpc:
+    # -- Enable an ingress resource for the Argo CD server for dedicated [gRPC-ingress]
+    enabled: true
+    # -- Additional ingress annotations for dedicated [gRPC-ingress]
+    annotations: {
+      nginx.ingress.kubernetes.io/force-ssl-redirect:  "true",
+      nginx.ingress.kubernetes.io/backend-protocol:   "GRPC"
+    }
+
+    # -- Defines which ingress controller will implement the resource [gRPC-ingress]
+    ingressClassName: "nginx"
+
+
+    # -- List of ingress hosts for dedicated [gRPC-ingress]
+    ## Argo Ingress.
+    ## Hostnames must be provided if Ingress is enabled.
+    ## Secrets must be manually created in the namespace
+    ##
+    hosts:
+      - grpc.argocd.example.com
+
+    # -- List of ingress paths for dedicated [gRPC-ingress]
+    paths:
+      - /
+    # -- Ingress path type for dedicated [gRPC-ingress]. One of `Exact`, `Prefix` or `ImplementationSpecific`
+    pathType: ImplementationSpecific
+    # -- Additional ingress paths for dedicated [gRPC-ingress]
+    https: true
+
+
+  # -- Manage ArgoCD configmap (Declarative Setup)
+  ## Ref: https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/argocd-cm.yaml
+  configEnabled: true
+  # -- [General Argo CD configuration]
+  # @default -- See [values.yaml]
+  config:
+    # Argo CD's externally facing base URL (optional). Required when configuring SSO
+    url: https://argocd.example.com
+    # Argo CD instance label key
+    application.instanceLabelKey: argocd.argoproj.io/instance

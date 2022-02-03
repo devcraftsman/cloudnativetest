@@ -1,11 +1,13 @@
-# ArgoCdN
+# Istio
 
-This will perform ProArgoCDN installation installation
+This will perform Istio installation by using Helm charts
 
-Fisrt admin password login
+
+Nodeport command for exit node
 
 ``` bash
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
+export INGRESS_PORT=$(kubectl -n istio-ingress get service istio-ingress -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}')
+export SECURE_INGRESS_PORT=$(kubectl -n istio-ingress get service istio-ingress -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}')
+export TCP_INGRESS_PORT=$(kubectl -n istio-ingress get service istio-ingress -o jsonpath='{.spec.ports[?(@.name=="tcp")].nodePort}')
 ```
-
 
